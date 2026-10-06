@@ -47,24 +47,87 @@ struct P12ToolView: View {
     }
 
     private func process() {
-        outputURL = nil
-        guard let p12URL, let provisionURL else { status = "Hãy chọn đủ .p12 và .mobileprovision."; return }
-        guard !oldPass.isEmpty, !newPass.isEmpty else { status = "Hãy nhập mật khẩu cũ và mật khẩu mới."; return }
-        guard newPass == confirm else { status = "Mật khẩu xác nhận không khớp."; return }
-        let clean = outputName.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "/", with: "_")
-        guard !clean.isEmpty else { status = "Tên mới không được để trống."; return }
-        do {
-            let p12Access = p12URL.startAccessingSecurityScopedResource(); defer { if p12Access { p12URL.stopAccessingSecurityScopedResource() } }
-            let provAccess = provisionURL.startAccessingSecurityScopedResource(); defer { if provAccess { provisionURL.stopAccessingSecurityScopedResource() } }
-            let input = try Data(contentsOf: p12URL)
-            var err: NSError?
-            guard let changed = P12Bridge.changePassword(input, oldPassword: oldPass, newPassword: newPass, outError: &err) else { throw err ?? NSError(domain: "SONCHOIGAME", code: -1, userInfo: [NSLocalizedDescriptionKey: "Không thể đổi mật khẩu P12."]) }
-            let provision = try Data(contentsOf: provisionURL)
-            let pass = Data(newPass.utf8)
-            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("\(clean).zip")
-            try? FileManager.default.removeItem(at: tmp)
-            try ZipWriter.makeZip(files: [("\(clean).p12", changed), ("\(clean).mobileprovision", provision), ("pass.txt", pass)], to: tmp)
-            outputURL = tmp; status = "✓ Hoàn tất: \(clean).zip\nGồm P12 mới + mobileprovision đổi tên + pass.txt"
-        } catch { status = "Lỗi: \(error.localizedDescription)" }
+    outputURL = nil
+
+    guard let p12URL, let provisionURL else {
+        status = "Hãy chọn đủ .p12 và .mobileprovision."
+        return
+    }
+
+    guard !oldPass.isEmpty, !newPass.isEmpty else {
+        status = "Hãy nhập mật khẩu cũ và mật khẩu mới."
+        return
+    }
+
+    guard newPass == confirm else {
+        status = "Mật khẩu xác nhận không khớp."
+        return
+    }
+
+    let clean = outputName
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacingOccurrences(of: "/", with: "_")
+
+    guard !clean.isEmpty else {
+        status = "Tên mới không được để trống."
+        return
+    }
+
+    do {
+        let p12Access = p12URL.startAccessingSecurityScopedResource()
+        defer {
+            if p12Access {
+                p12URL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let provAccess = provisionURL.startAccessingSecurityScopedResource()
+        defer {
+            if provAccess {
+                provisionURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let input = try Data(contentsOf: p12URL)
+
+        guard let changed = P12Bridge.changePassword(
+            input,
+            oldPassword: oldPass,
+            newPassword: newPass
+        ) else {
+            throw NSError(
+                domain: "SONCHOIGAME",
+                code: -1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Không thể đổi mật khẩu P12."
+                ]
+            )
+        }
+
+        let provision = try Data(contentsOf: provisionURL)
+        let pass = Data(newPass.utf8)
+
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(clean).zip")
+
+        try? FileManager.default.removeItem(at: tmp)
+
+        try ZipWriter.makeZip(
+            files: [
+                ("\(clean).p12", changed),
+                ("\(clean).mobileprovision", provision),
+                ("pass.txt", pass)
+            ],
+            to: tmp
+        )
+
+        outputURL = tmp
+        status = """
+        ✓ Hoàn tất: \(clean).zip
+        Gồm P12 mới + mobileprovision đổi tên + pass.txt
+        """
+
+    } catch {
+        status = "Lỗi: \(error.localizedDescription)"
     }
 }
