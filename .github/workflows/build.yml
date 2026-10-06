@@ -1,0 +1,48 @@
+name: Build SONCHOIGAME IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: |
+          xcodegen generate
+          ls -la
+
+      - name: Build App
+        run: |
+          xcodebuild \
+            -project SONCHOIGAME.xcodeproj \
+            -scheme SONCHOIGAME \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/SONCHOIGAME.app Payload/
+          zip -r SONCHOIGAME.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SONCHOIGAME-IPA
+          path: SONCHOIGAME.ipa
