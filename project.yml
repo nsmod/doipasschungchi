@@ -14,26 +14,24 @@ targets:
   SONCHOIGAME:
     type: application
     platform: iOS
-
     sources:
       - path: SONCHOIGAME
-
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sonchoigame.p12tool
         PRODUCT_NAME: SONCHOIGAME
-
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
-
         SWIFT_OBJC_BRIDGING_HEADER: SONCHOIGAME/Bridge/SONCHOIGAME-Bridging-Header.h
-
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: SONCHOIGAME
+        INFOPLIST_KEY_CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        INFOPLIST_KEY_CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         INFOPLIST_KEY_UIFileSharingEnabled: YES
-
         IPHONEOS_DEPLOYMENT_TARGET: "16.0"
-
     dependencies:
       - package: OpenSSL
         product: OpenSSL
