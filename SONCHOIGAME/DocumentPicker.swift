@@ -1,19 +1,42 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
 
-struct FileImporterButton: View {
-    let title: String
-    let extensions: [String]
-    @Binding var selectedURL: URL?
-    @State private var showing = false
+struct SystemDocumentPicker: UIViewControllerRepresentable {
+    let onPick: (URL) -> Void
+    let onCancel: () -> Void
 
-    var body: some View {
-        Button { showing = true } label: {
-            HStack { Image(systemName: "doc.badge.plus"); VStack(alignment: .leading) { Text(title).bold(); Text(selectedURL?.lastPathComponent ?? "Chưa chọn file").font(.caption).opacity(0.7) }; Spacer(); Image(systemName: "chevron.right") }
-                .padding().background(.white.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 16))
-        }.buttonStyle(.plain)
-        .fileImporter(isPresented: $showing, allowedContentTypes: extensions.compactMap { UTType(filenameExtension: $0) }, allowsMultipleSelection: false) { result in
-            if case .success(let urls) = result { selectedURL = urls.first }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick, onCancel: onCancel)
+    }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        // Cho iOS Files hien tat ca tep. App se tu kiem tra duoi file sau khi nguoi dung chon.
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item], asCopy: true)
+        picker.allowsMultipleSelection = false
+        picker.shouldShowFileExtensions = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    final class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: (URL) -> Void
+        let onCancel: () -> Void
+
+        init(onPick: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
+            self.onPick = onPick
+            self.onCancel = onCancel
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            onPick(url)
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            onCancel()
         }
     }
 }
